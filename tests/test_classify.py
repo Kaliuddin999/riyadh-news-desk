@@ -42,3 +42,11 @@ def test_non_saudi_headline_needs_local_feed():
 
 def test_summary_is_used_too():
     assert classify("Big news today", "Riyadh schools suspended tomorrow") == ("schools", True)
+
+
+def test_foreign_ipo_is_discarded():
+    assert classify("Meet the Data Center Builders Behind A.I.'s Next IPO Wave") == (None, False)
+
+
+def test_saudi_ipo_without_market_word_is_kept():
+    assert classify("Saudi Arabia proposes sweeping overhaul of IPO regulations") == ("ipo", False)

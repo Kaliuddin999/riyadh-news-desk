@@ -55,7 +55,8 @@ def classify(title, summary="", assume_local=False):
 
     if SHALFA.search(text) or (SHALFA_CODE.search(text) and MARKET.search(text)):
         return "shalfa", bool(SHALFA_URGENT.search(text))
-    if IPO_DIRECT.search(text) or (IPO.search(text) and MARKET.search(text)):
+    saudi_market = MARKET.search(text) or LOCATION.search(text)
+    if (IPO_DIRECT.search(text) and saudi_market) or (IPO.search(text) and MARKET.search(text)):
         return "ipo", False
     if not (assume_local or LOCATION.search(text)):
         return None, False
