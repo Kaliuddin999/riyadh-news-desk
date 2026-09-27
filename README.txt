@@ -2,6 +2,8 @@ RIYADH NEWS DESK
 
 Page:      https://kaliuddin999.github.io/riyadh-news-desk/
 Password:  in secret\password.txt (never share, never commit)
+GitHub:    each run replaces branch gh-pages with the latest page + news
+           (Pages setting: branch gh-pages, folder / root)
 
 Run once by hand:      run_news_desk.bat
 Preview (no upload):   run_news_desk.bat --dry-run
