@@ -15,3 +15,9 @@ def test_only_royal_court_search_skips_the_location_check():
     # Google News matches article bodies, so e.g. "Rain, flooding in Bangkok" comes back
     # from the Riyadh weather search; only Royal Court titles often omit "Saudi".
     assert [f.name for f in FEEDS if f.assume_local] == ["GN royal court"]
+
+
+def test_every_portal_section_is_searched():
+    names = {f.name for f in FEEDS}
+    assert {"GN crime", "GN fraud", "GN economy", "GN finance", "GN contracts", "GN offers"} <= names
+    assert sum(n.startswith("GN forecast") for n in names) >= 5

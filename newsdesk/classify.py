@@ -8,7 +8,7 @@ def _words(*terms):
     return re.compile(r"\b(?:" + "|".join(parts) + r")\b", re.IGNORECASE)
 
 
-LOCATION = _words("riyadh", "saudi*", "ksa")
+LOCATION = _words("riyadh", "saudi*", "ksa", "sama", "saibor", "sibor", "zatca")  # last four are Saudi-only
 MARKET = _words("tadawul", "tasi", "cma", "capital market authority", "nomu",
                 "parallel market", "saudi exchange")
 
@@ -36,14 +36,39 @@ WEATHER_URGENT = _words("warning*", "warns", "alert*", "severe", "flood*", "torr
 ROAD_SUBJECT = _words("road*", "street*", "highway*", "traffic", "interchange*", "tunnel*",
                       "bridge*", "metro")
 ROAD_CHANGE = _words("closed", "closure*", "divert*", "diversion*", "detour*", "shut*",
-                     "blocked", "congestion")
+                     "blocked", "congestion", "jam*", "gridlock")
 ROAD_URGENT = _words("closed", "closure*", "shut*", "blocked")
+
+FORECAST = _words("forecast*", "outlook*", "expected", "expects", "predict*", "projection*",
+                  "projected", "anticipat*", "next year", "2027", "2028")
+FORECAST_TOPIC = _words("econom*", "gdp", "growth", "inflation", "recession", "job*", "employment",
+                        "unemployment", "gold", "oil", "technolog*", "ai", "a.i",
+                        "artificial intelligence", "health*", "pandemic", "flood*", "earthquake*",
+                        "cyclone*", "crisis", "crises", "ipo*", "rate*")
+
+FRAUD = _words("fraud*", "scam*", "phishing", "swindl*", "counterfeit*", "embezzl*", "bribery",
+               "money laundering", "impersonat*", "nazaha", "corruption", "awareness", "beware", "warns citizens",
+               "warns residents", "warns public")
 
 DEATH = _words("died", "dies", "death*", "passed away", "passes away", "funeral*", "mourn*")
 MAJOR = _words("died", "dies", "death*", "passed away", "passes away", "funeral*",
-               "condolence*", "mourn*", "killed", "fire", "blaze", "explosion*", "crash*",
-               "collapse*", "shooting", "attack*")
+               "condolence*", "mourn*", "explosion*", "airstrike*", "missile*", "attack*", "kills")
 ROYAL = _words("royal court")
+
+CRIME = _words("theft", "thief", "thieves", "stolen", "steal*", "robbery", "robber*", "burglar*",
+               "arrest*", "accident*", "crash*", "collision", "fire", "blaze", "murder*",
+               "stabbing", "shooting", "smuggl*", "killed", "injured", "drown*", "collapse*")
+
+CONTRACT = _words("contract*", "tender*")
+AWARD = _words("award*", "wins", "won", "signs", "signed", "secures", "secured", "inks")
+
+FINANCE = _words("sibor", "saibor", "sama", "repo rate", "interest rate*", "bank rate*",
+                 "central bank", "accounting", "zatca", "vat", "ifrs", "e-invoicing", "mortgage*",
+                 "bank", "banks", "banking", "lending", "loan*", "deposit*")
+
+ECONOMY = _words("econom*", "gdp", "inflation", "budget", "vision 2030", "investment*", "fdi",
+                 "non-oil", "pmi", "unemployment", "exports", "imports", "trade surplus",
+                 "fiscal", "growth")
 
 SHOPPING = _words("sale", "discount*", "offer", "offers", "white friday", "black friday",
                   "riyadh season", "deal", "deals", "promotion*")
@@ -60,19 +85,38 @@ def classify(title, summary="", assume_local=False):
                                             or LOCATION.search(text) or SHALFA_CODE.search(text))
     if shalfa_named or (SHALFA_CODE.search(text) and MARKET.search(text)):
         return "shalfa", bool(SHALFA_URGENT.search(text))
-    saudi_market = MARKET.search(text) or LOCATION.search(text)
+
+    local = assume_local or bool(LOCATION.search(text))
+    if local:
+        if SCHOOL_SUBJECT.search(text) and SCHOOL_CHANGE.search(text):
+            return "schools", bool(SCHOOL_URGENT.search(text))
+        if WEATHER.search(text):
+            return "weather", bool(WEATHER_URGENT.search(text))
+        if ROAD_SUBJECT.search(text) and ROAD_CHANGE.search(text):
+            return "roads", bool(ROAD_URGENT.search(text))
+
+    # Outlooks need no Saudi mention: gold, oil or IMF forecasts matter here too.
+    if FORECAST.search(text) and FORECAST_TOPIC.search(text):
+        return "forecast", False
+
+    saudi_market = MARKET.search(text) or local
     if (IPO_DIRECT.search(text) and saudi_market) or (IPO.search(text) and MARKET.search(text)):
         return "ipo", False
-    if not (assume_local or LOCATION.search(text)):
+    if not local:
         return None, False
-    if SCHOOL_SUBJECT.search(text) and SCHOOL_CHANGE.search(text):
-        return "schools", bool(SCHOOL_URGENT.search(text))
-    if WEATHER.search(text):
-        return "weather", bool(WEATHER_URGENT.search(text))
-    if ROAD_SUBJECT.search(text) and ROAD_CHANGE.search(text):
-        return "roads", bool(ROAD_URGENT.search(text))
+
+    if FRAUD.search(text):
+        return "fraud", False
     if MAJOR.search(text):
         return "major", bool(ROYAL.search(text) and DEATH.search(text))
+    if CRIME.search(text):
+        return "crime", False
+    if CONTRACT.search(text) and AWARD.search(text):
+        return "contracts", False
+    if FINANCE.search(text):
+        return "finance", False
+    if ECONOMY.search(text):
+        return "economy", False
     if SHOPPING.search(text):
         return "shopping", False
     return None, False

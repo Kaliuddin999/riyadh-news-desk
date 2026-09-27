@@ -27,9 +27,12 @@ def parse_feed(content):
         suffix = f" - {source}"
         if source and title.endswith(suffix):
             title = title[: -len(suffix)]
+        summary = _clean(e.get("summary", ""))
+        if summary in (title, f"{title} {source}"):  # Google News: just title + outlet name
+            summary = ""
         stamp = e.get("published_parsed") or e.get("updated_parsed")
         published = datetime.fromtimestamp(calendar.timegm(stamp), tz=timezone.utc) if stamp else None
-        entries.append({"title": title, "link": e.get("link", ""), "summary": _clean(e.get("summary", "")),
+        entries.append({"title": title, "link": e.get("link", ""), "summary": summary,
                         "published": published, "source": source})
     return entries
 

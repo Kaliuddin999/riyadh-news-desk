@@ -35,3 +35,20 @@ def test_parse_feed_rejects_html():
 
 def test_parse_feed_accepts_empty_feed():
     assert parse_feed(b'<?xml version="1.0"?><rss version="2.0"><channel><title>x</title></channel></rss>') == []
+
+
+GOOGLE_STYLE = b"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Google News</title>
+<item>
+  <title>Seven killed in Saudi airstrike - Outlook India</title>
+  <link>https://news.google.com/rss/articles/xyz</link>
+  <description>&lt;a href="https://x"&gt;Seven killed in Saudi airstrike&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color="#6f6f6f"&gt;Outlook India&lt;/font&gt;</description>
+  <source url="https://www.outlookindia.com">Outlook India</source>
+</item>
+</channel></rss>"""
+
+
+def test_google_news_summary_that_only_repeats_title_and_outlet_is_dropped():
+    # otherwise the outlet name ("Outlook India") is read as a forecast word
+    (entry,) = parse_feed(GOOGLE_STYLE)
+    assert entry["summary"] == ""

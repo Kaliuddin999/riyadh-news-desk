@@ -115,3 +115,11 @@ def test_corrupt_store_is_set_aside_not_fatal(root):
     assert run(root) == 0
     assert [i["title"] for i in published(root)["items"]] == [RAIN["title"]]
     assert (root / "data" / "news.json.bad").exists()
+
+
+def test_feed_limit_keeps_only_the_newest_entries(root):
+    older = dict(RAIN, title="Dust storm hits Riyadh", link="https://example.com/dust",
+                 published=datetime(2026, 9, 26, 8, 0, tzinfo=timezone.utc))
+    fetch_news.run(root, fetcher=lambda url: [older, RAIN], publisher=lambda r, m: True,
+                   feeds=[Feed("capped", "http://capped", limit=1)], now=NOW, iterations=1000)
+    assert [i["title"] for i in published(root)["items"]] == [RAIN["title"]]

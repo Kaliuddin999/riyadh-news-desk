@@ -63,6 +63,8 @@ def collect(feeds, fetcher, now):
             log.warning("feed failed: %s (%s)", feed.name, exc)
             failed.append(feed.name)
             continue
+        if feed.limit:
+            entries = sorted(entries, key=lambda e: e["published"] or now, reverse=True)[: feed.limit]
         for e in entries:
             category, urgent = classify(e["title"], e["summary"], assume_local=feed.assume_local)
             if category is None:
