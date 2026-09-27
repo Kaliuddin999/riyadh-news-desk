@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
     "secret/password.txt",
     "logs/run.log",
     ".venv/pyvenv.cfg",
+    "docs/news.enc",
 ])
 def test_private_files_are_never_published(path):
     result = subprocess.run(["git", "check-ignore", "-q", path], cwd=ROOT)

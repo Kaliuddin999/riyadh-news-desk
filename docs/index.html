@@ -183,7 +183,7 @@ $("login-form").addEventListener("submit", async ev => {
   $("login-error").textContent = "Opening…";
   try {
     const blob = await fetchBlob();
-    const k = await deriveKey($("pw").value, blob);
+    const k = await deriveKey($("pw").value.trim(), blob);  // the job trims the saved password too
     data = await decrypt(blob, k);                                 // throws OperationError on wrong password
     key = k; salt = blob.salt;
     if ($("remember").checked) await remember(k, blob.salt);

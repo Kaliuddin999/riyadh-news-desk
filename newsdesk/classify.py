@@ -8,12 +8,14 @@ def _words(*terms):
     return re.compile(r"\b(?:" + "|".join(parts) + r")\b", re.IGNORECASE)
 
 
-LOCATION = _words("riyadh", "saudi*", "ksa", "kingdom")
+LOCATION = _words("riyadh", "saudi*", "ksa")
 MARKET = _words("tadawul", "tasi", "cma", "capital market authority", "nomu",
                 "parallel market", "saudi exchange")
 
 SHALFA = _words("shalfa")
-SHALFA_CODE = _words("9613")
+SHALFA_CODE = re.compile(r"\b9613\b(?![.,]\d)")  # not "9613.4 points"
+SHALFA_CONTEXT = _words("facilit*", "fm", "contract*", "sar", "share*", "shareholder*", "board",
+                        "profit*", "results", "dividend*")
 SHALFA_URGENT = _words("halt*", "suspen*")
 
 IPO_DIRECT = _words("ipo", "ipos", "initial public offering*")
@@ -24,9 +26,10 @@ SCHOOL_SUBJECT = _words("school*", "madrasati", "classes", "students",
                         "ministry of education", "universit*")
 SCHOOL_CHANGE = _words("suspend*", "closed", "closure*", "remote", "online",
                        "distance learning", "cancel*", "postpone*", "holiday*")
+SCHOOL_URGENT = _words("suspend*", "closed", "closure*", "remote", "distance learning", "cancel*")
 
 WEATHER = _words("weather", "rain*", "storm*", "dust*", "sandstorm*", "thunder*", "flood*",
-                 "ncm", "meteorolog*", "heatwave", "fog", "hail*", "torrential")
+                 "ncm", "meteorolog*", "heatwave", "fog", "hailstorm*", "torrential")
 WEATHER_URGENT = _words("warning*", "warns", "alert*", "severe", "flood*", "torrential",
                         "heavy rain*")
 
@@ -53,7 +56,9 @@ def classify(title, summary="", assume_local=False):
     """
     text = f"{title} {summary}"
 
-    if SHALFA.search(text) or (SHALFA_CODE.search(text) and MARKET.search(text)):
+    shalfa_named = SHALFA.search(text) and (SHALFA_CONTEXT.search(text) or MARKET.search(text)
+                                            or LOCATION.search(text) or SHALFA_CODE.search(text))
+    if shalfa_named or (SHALFA_CODE.search(text) and MARKET.search(text)):
         return "shalfa", bool(SHALFA_URGENT.search(text))
     saudi_market = MARKET.search(text) or LOCATION.search(text)
     if (IPO_DIRECT.search(text) and saudi_market) or (IPO.search(text) and MARKET.search(text)):
@@ -61,7 +66,7 @@ def classify(title, summary="", assume_local=False):
     if not (assume_local or LOCATION.search(text)):
         return None, False
     if SCHOOL_SUBJECT.search(text) and SCHOOL_CHANGE.search(text):
-        return "schools", True
+        return "schools", bool(SCHOOL_URGENT.search(text))
     if WEATHER.search(text):
         return "weather", bool(WEATHER_URGENT.search(text))
     if ROAD_SUBJECT.search(text) and ROAD_CHANGE.search(text):

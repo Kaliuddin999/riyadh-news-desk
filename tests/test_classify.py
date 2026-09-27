@@ -50,3 +50,30 @@ def test_foreign_ipo_is_discarded():
 
 def test_saudi_ipo_without_market_word_is_kept():
     assert classify("Saudi Arabia proposes sweeping overhaul of IPO regulations") == ("ipo", False)
+
+
+@pytest.mark.parametrize("title", [
+    "Saudi crown prince hailed for peace efforts",   # 'hailed' is not weather
+    "Former United Kingdom minister dies aged 80",   # 'kingdom' is not Saudi
+    "TASI closes at 9613.4 points",                  # index level, not Shalfa's code
+    "Shalfa village festival draws visitors in Morocco",  # the name without business context
+])
+def test_review_false_positives_are_discarded(title):
+    assert classify(title) == (None, False)
+
+
+@pytest.mark.parametrize("title", [
+    "Saudi university launches online degree",
+    "Riyadh schools announce winter holiday dates",
+])
+def test_school_news_without_closure_is_not_urgent(title):
+    assert classify(title) == ("schools", False)
+
+
+@pytest.mark.parametrize("title", [
+    "Shalfa Awarded SAR 61.2 mln Contract from Ministry of Tourism",
+    "Shalfa secures contract to provide FM services at Qassim school buildings",
+    "Shalfa Facilities Management Announces Contract Award With Tatweer Buildings Co",
+])
+def test_real_shalfa_business_news_is_kept(title):
+    assert classify(title)[0] == "shalfa"

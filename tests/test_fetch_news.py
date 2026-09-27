@@ -99,3 +99,19 @@ def test_short_password_rejected(root):
     (root / "secret" / "password.txt").write_text("short", encoding="utf-8")
     with pytest.raises(fetch_news.ConfigError):
         run(root)
+
+
+def test_password_file_with_byte_order_mark_works(root):
+    # PowerShell 5.1 and some editors save UTF-8 with a BOM
+    (root / "secret" / "password.txt").write_text("﻿" + PW, encoding="utf-8")
+    run(root)
+    assert published(root)["items"][0]["title"] == RAIN["title"]
+
+
+def test_corrupt_store_is_set_aside_not_fatal(root):
+    # e.g. the run was killed while writing news.json
+    (root / "data").mkdir()
+    (root / "data" / "news.json").write_text('{"items": [', encoding="utf-8")
+    assert run(root) == 0
+    assert [i["title"] for i in published(root)["items"]] == [RAIN["title"]]
+    assert (root / "data" / "news.json.bad").exists()

@@ -2,6 +2,8 @@
 import argparse
 import json
 import logging
+import os
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,10 +28,30 @@ def read_password(root):
     path = root / "secret" / "password.txt"
     if not path.exists():
         raise ConfigError(f"Missing {path}. Put your page password in it (one line).")
-    password = path.read_text(encoding="utf-8").strip()
+    password = path.read_text(encoding="utf-8-sig").strip()  # -sig: Notepad/PowerShell may add a BOM
     if len(password) < MIN_PASSWORD_LENGTH:
         raise ConfigError(f"Password must be at least {MIN_PASSWORD_LENGTH} characters.")
     return password
+
+
+def write_atomic(path, text):
+    """Write via a temp file so a killed run never leaves a half-written file behind."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def load_items(store_path):
+    if not store_path.exists():
+        return []
+    try:
+        return json.loads(store_path.read_text(encoding="utf-8"))["items"]
+    except (ValueError, KeyError, TypeError) as exc:
+        bad = store_path.with_name(store_path.name + ".bad")
+        log.warning("damaged %s (%s); moved to %s and starting fresh", store_path.name, exc, bad.name)
+        os.replace(store_path, bad)
+        return []
 
 
 def collect(feeds, fetcher, now):
@@ -57,7 +79,7 @@ def run(root, *, fetcher=fetch_entries, publisher=git_publish, feeds=FEEDS, now=
     now = now or datetime.now(timezone.utc)
     password = read_password(root)
     store_path = root / "data" / "news.json"
-    existing = json.loads(store_path.read_text(encoding="utf-8"))["items"] if store_path.exists() else []
+    existing = load_items(store_path)
 
     new, failed = collect(feeds, fetcher, now)
     new = prune(new, now)
@@ -73,13 +95,11 @@ def run(root, *, fetcher=fetch_entries, publisher=git_publish, feeds=FEEDS, now=
         return 0
 
     payload = {"items": items, "status": status}
-    store_path.parent.mkdir(parents=True, exist_ok=True)
-    store_path.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    write_atomic(store_path, json.dumps(payload, ensure_ascii=False, indent=1))
     salt = load_or_create_salt(root / "data" / "salt.bin")
     extra = {"iterations": iterations} if iterations else {}
-    (root / "docs").mkdir(exist_ok=True)
     blob = encrypt_json(payload, password, salt, **extra)
-    (root / "docs" / "news.enc").write_text(json.dumps(blob), encoding="utf-8")
+    write_atomic(root / "docs" / "news.enc", json.dumps(blob))
 
     if not publisher(root, f"news update {iso(now)}"):
         log.warning("push failed; the commit will be pushed on the next run")

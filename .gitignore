@@ -8,3 +8,6 @@ __pycache__/
 .superpowers/
 .claude-flow/
 .playwright-mcp/
+# the encrypted news is published to the gh-pages branch, never committed on main
+docs/news.enc
+docs/news.enc.tmp
