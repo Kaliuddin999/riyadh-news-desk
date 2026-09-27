@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 DEFAULT_RETENTION_DAYS = 14
-RETENTION_DAYS = {"shalfa": 90}
+RETENTION_DAYS = {"shalfa": 365}
 _ISO = "%Y-%m-%dT%H:%M:%SZ"
 
 

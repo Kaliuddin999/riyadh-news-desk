@@ -56,5 +56,6 @@ def test_prune_keeps_shalfa_longer():
     items = [item("w15", "https://a.com/1", "weather", 15),
              item("w13", "https://a.com/2", "weather", 13),
              item("s15", "https://a.com/3", "shalfa", 15),
-             item("s91", "https://a.com/4", "shalfa", 91)]
-    assert [i["title"] for i in prune(items, NOW)] == ["w13", "s15"]
+             item("s200", "https://a.com/4", "shalfa", 200),
+             item("s366", "https://a.com/5", "shalfa", 366)]
+    assert [i["title"] for i in prune(items, NOW)] == ["w13", "s15", "s200"]
