@@ -1,0 +1,60 @@
+from datetime import datetime, timedelta, timezone
+
+from newsdesk.store import item_id, make_item, merge, normalize_url, prune
+
+NOW = datetime(2026, 9, 27, 9, 0, tzinfo=timezone.utc)
+
+
+def item(title, link, category="weather", days_old=0):
+    return make_item(title=title, link=link, source="SPA", category=category, urgent=False,
+                     published=NOW - timedelta(days=days_old), now=NOW)
+
+
+def test_normalize_url_drops_tracking_fragment_and_trailing_slash():
+    assert normalize_url("HTTPS://Example.com/a/?utm_source=x&id=5#top") == "https://example.com/a?id=5"
+
+
+def test_item_id_ignores_tracking_params():
+    assert item_id("https://example.com/a?utm_medium=rss") == item_id("https://example.com/a")
+    assert len(item_id("https://example.com/a")) == 16
+
+
+def test_make_item_shape():
+    i = item("  Rain   in Riyadh ", "https://example.com/a")
+    assert i == {"id": item_id("https://example.com/a"), "title": "Rain in Riyadh",
+                 "link": "https://example.com/a", "source": "SPA", "category": "weather",
+                 "urgent": False, "published_at": "2026-09-27T09:00:00Z",
+                 "fetched_at": "2026-09-27T09:00:00Z"}
+
+
+def test_make_item_rejects_non_http_links_and_empty_titles():
+    assert item("Rain", "javascript:alert(1)") is None
+    assert item("Rain", "") is None
+    assert item("   ", "https://example.com/a") is None
+
+
+def test_make_item_missing_or_future_date_becomes_now():
+    for published in (None, NOW + timedelta(days=2)):
+        i = make_item(title="Rain", link="https://e.com/a", source="", category="weather",
+                      urgent=False, published=published, now=NOW)
+        assert i["published_at"] == "2026-09-27T09:00:00Z"
+
+
+def test_merge_dedupes_by_url_and_title_and_sorts_newest_first():
+    old = [item("Rain in Riyadh", "https://a.com/1", days_old=1)]
+    new = [
+        item("Rain in Riyadh", "https://a.com/1?utm_source=x"),   # same URL
+        item("RAIN in Riyadh!", "https://b.com/other"),           # same title
+        item("Dust storm warning", "https://c.com/2"),
+    ]
+    merged, added = merge(old, new)
+    assert added == 1
+    assert [i["title"] for i in merged] == ["Dust storm warning", "Rain in Riyadh"]
+
+
+def test_prune_keeps_shalfa_longer():
+    items = [item("w15", "https://a.com/1", "weather", 15),
+             item("w13", "https://a.com/2", "weather", 13),
+             item("s15", "https://a.com/3", "shalfa", 15),
+             item("s91", "https://a.com/4", "shalfa", 91)]
+    assert [i["title"] for i in prune(items, NOW)] == ["w13", "s15"]
