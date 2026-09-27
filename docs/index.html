@@ -5,44 +5,49 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="data:,">
-<title>Riyadh News Desk</title>
+<title>MAK News Portal</title>
 <style>
-:root{color-scheme:light dark;--bg:#f6f5f2;--card:#fff;--ink:#1c1c1c;--muted:#6b6b6b;--line:#e3e1dc;--accent:#0b6b4f;--urgent:#b3261e;--urgent-bg:#fdecea;--chip:#ecebe7}
-@media (prefers-color-scheme:dark){:root{--bg:#121212;--card:#1e1e1e;--ink:#ececec;--muted:#a0a0a0;--line:#333;--accent:#4cc39a;--urgent:#ff8a80;--urgent-bg:#3a1f1d;--chip:#2a2a2a}}
+:root{color-scheme:light dark;--bg:#f4f3ef;--card:#fff;--ink:#1c1c1c;--muted:#6b6b6b;--line:#e3e1dc;--accent:#0b6b4f;--warn:#b3261e;--warn-bg:#fdecea}
+@media (prefers-color-scheme:dark){:root{--bg:#121212;--card:#1e1e1e;--ink:#ececec;--muted:#a0a0a0;--line:#333;--accent:#4cc39a;--warn:#ff8a80;--warn-bg:#3a1f1d}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:760px;margin:0 auto;padding:16px}
-header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
-h1{font-size:1.3rem;margin:0}
+main{max-width:860px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+h1{font-size:1.35rem;margin:0;letter-spacing:.02em}
 .muted{color:var(--muted);font-size:.85rem}
-.stale{background:var(--urgent-bg);color:var(--urgent);padding:8px 12px;border-radius:8px;margin:12px 0}
-section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:14px 0}
-section h2{font-size:1rem;margin:0 0 8px}
-#urgent{border-color:var(--urgent);background:var(--urgent-bg)}
-#urgent h2{color:var(--urgent)}
-#shalfa{border-left:4px solid var(--accent)}
-.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0}
-.chips button{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:.9rem;white-space:nowrap;cursor:pointer}
-.chips button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.stale{background:var(--warn-bg);color:var(--warn);padding:8px 12px;border-radius:8px;margin:0 0 12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:640px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tile{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:64px;padding:12px 14px;border:0;border-radius:10px;
+  background:var(--c);color:#fff;font:inherit;font-weight:650;text-align:left;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.tile:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.tile[aria-expanded=true]{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--c)}
+.tile .name{hyphens:auto;overflow-wrap:break-word;min-width:0}
+.tile .count{flex:none;text-align:right;font-size:.8rem;font-weight:500;line-height:1.2}
+.tile .count b{display:block;font-size:1.3rem;font-weight:750}
+.tile.forecast{background:#1b1b1b;color:#ffd54f;border:2px solid #ffd54f}
+.panel{grid-column:1/-1;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:10px;padding:6px 14px}
 ul.news{list-style:none;margin:0;padding:0}
 ul.news li{padding:10px 0;border-top:1px solid var(--line)}
 ul.news li:first-child{border-top:0}
 ul.news a{color:var(--ink);text-decoration:none;font-weight:600;overflow-wrap:anywhere}
 ul.news a:hover{text-decoration:underline}
 .meta{color:var(--muted);font-size:.8rem;margin-top:2px}
-.tag{display:inline-block;background:var(--chip);border-radius:6px;padding:0 6px;margin-right:6px}
-.u{color:var(--urgent);font-weight:700}
+.u{color:var(--warn);font-weight:700}
+#login{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+#login h2{font-size:1rem;margin:0 0 8px}
 form{display:flex;flex-direction:column;gap:10px;max-width:360px}
 input[type=password]{font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
 button.primary{font:inherit;padding:10px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
-.error{color:var(--urgent);min-height:1.2em}
+.error{color:var(--warn);min-height:1.2em}
 .linkbtn{background:none;border:0;color:var(--muted);text-decoration:underline;font:inherit;font-size:.8rem;cursor:pointer;padding:0}
+footer{margin-top:14px}
 [hidden]{display:none!important}
 </style>
 </head>
 <body>
 <main>
-<header><h1>Riyadh News Desk</h1><span id="updated" class="muted"></span></header>
+<header><h1>MAK News Portal</h1><span id="updated" class="muted"></span></header>
 
 <section id="login" hidden>
   <h2>Enter password</h2>
@@ -56,20 +61,32 @@ button.primary{font:inherit;padding:10px;border:0;border-radius:8px;background:v
 
 <div id="desk" hidden>
   <div id="stale" class="stale" hidden>No update for over 2 hours — is the laptop off?</div>
-  <section id="urgent" hidden><h2>🔴 Urgent</h2><ul class="news" id="urgent-list"></ul></section>
-  <section id="shalfa"><h2>📌 Shalfa (Nomu 9613)</h2><ul class="news" id="shalfa-list"></ul></section>
-  <nav class="chips" id="chips" aria-label="Filter by category"></nav>
-  <section><ul class="news" id="list"></ul></section>
-  <p class="muted"><span id="failed"></span> <button class="linkbtn" id="forget" type="button">Forget this device</button></p>
+  <div class="grid" id="grid"></div>
+  <footer class="muted"><span id="failed"></span> <button class="linkbtn" id="forget" type="button">Forget this device</button></footer>
 </div>
 </main>
 <script>
-const CATEGORIES = [["all","All"],["schools","🏫 Schools"],["weather","⛈️ Weather"],["roads","🚧 Roads"],["major","⚫ Major news"],["ipo","📈 Tadawul IPO"],["shopping","🏷️ Offers"]];
-const LABELS = Object.fromEntries(CATEGORIES.concat([["shalfa","📌 Shalfa"]]));
+// [category, label, colour]. "urgent" collects urgent items from every category.
+const TILES = [
+  ["urgent", "🔴 Urgent", "#c62828"],
+  ["shalfa", "📌 Shalfa 9613", "#00695c"],
+  ["schools", "🏫 Schools", "#1565c0"],
+  ["weather", "⛈️ Weather", "#0277bd"],
+  ["roads", "🚗 Traffic & Roads", "#d84315"],
+  ["crime", "🚨 Crime & Accidents", "#6a1b9a"],
+  ["fraud", "⚠️ Fraud & Awareness", "#ad1457"],
+  ["major", "⚫ Major News", "#37474f"],
+  ["economy", "💹 KSA Economy", "#2e7d32"],
+  ["finance", "🏦 Finance & Banking", "#283593"],
+  ["ipo", "📈 Tadawul & IPO", "#4e7d21"],
+  ["contracts", "📝 Contracts Awarded", "#5d4037"],
+  ["shopping", "🛒 Super­market Offers", "#7a6e12"],  // soft hyphen: breaks as "Super-market" on phones
+  ["forecast", "🔮 MAK-FORECAST", "#ffd54f"],
+];
 const STORE_KEY = "riyadh-news-desk-key";
-const REFRESH_MS = 5 * 60 * 1000, STALE_MS = 2 * 60 * 60 * 1000, URGENT_WINDOW_MS = 48 * 60 * 60 * 1000;
+const REFRESH_MS = 5 * 60 * 1000, STALE_MS = 2 * 60 * 60 * 1000, DAY_MS = 24 * 60 * 60 * 1000, URGENT_WINDOW_MS = 2 * DAY_MS;
 const riyadhTime = new Intl.DateTimeFormat("en-GB", {timeZone: "Asia/Riyadh", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"});
-let key = null, salt = null, data = null, filter = "all", timer = null;
+let key = null, salt = null, data = null, open = null, timer = null;
 
 const $ = id => document.getElementById(id);
 const fromB64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
@@ -101,6 +118,11 @@ function ago(isoText) {
   const h = Math.round(m / 60);
   return h < 48 ? h + " h ago" : Math.round(h / 24) + " days ago";
 }
+function itemsFor(cat) {
+  const items = data.items || [];
+  if (cat === "urgent") return items.filter(i => i.urgent && Date.now() - Date.parse(i.published_at) < URGENT_WINDOW_MS);
+  return items.filter(i => i.category === cat);
+}
 function row(item) {
   const li = document.createElement("li");
   const a = document.createElement("a");
@@ -108,33 +130,53 @@ function row(item) {
   if (/^https?:\/\//i.test(item.link)) { a.href = item.link; a.target = "_blank"; a.rel = "noopener noreferrer"; }
   const meta = document.createElement("div");
   meta.className = "meta";
-  const tag = document.createElement("span");
-  tag.className = "tag";
-  tag.textContent = LABELS[item.category] || item.category;
-  meta.append(tag, (item.source ? item.source + " · " : "") + ago(item.published_at) + " · " + riyadhTime.format(new Date(item.published_at)));
+  meta.append((item.source ? item.source + " · " : "") + ago(item.published_at) + " · " + riyadhTime.format(new Date(item.published_at)));
   if (item.urgent) { const u = document.createElement("span"); u.className = "u"; u.textContent = " URGENT"; meta.append(u); }
   li.append(a, meta);
   return li;
 }
-function fill(listId, items, emptyText) {
-  const ul = $(listId);
-  ul.replaceChildren();
-  if (!items.length) { const li = document.createElement("li"); li.className = "muted"; li.textContent = emptyText; ul.append(li); return; }
-  items.forEach(i => ul.append(row(i)));
-}
 function render() {
-  const items = data.items || [], st = data.status || {};
+  const st = data.status || {};
   const last = st.last_run ? Date.parse(st.last_run) : 0;
   $("updated").textContent = last ? "Updated " + riyadhTime.format(new Date(last)) + " (Riyadh)" : "";
   $("stale").hidden = !last || Date.now() - last < STALE_MS;
-  const urgent = items.filter(i => i.urgent && Date.now() - Date.parse(i.published_at) < URGENT_WINDOW_MS);
-  $("urgent").hidden = !urgent.length;
-  fill("urgent-list", urgent, "");
-  fill("shalfa-list", items.filter(i => i.category === "shalfa"), "No Shalfa news yet.");
-  fill("list", items.filter(i => i.category !== "shalfa" && (filter === "all" || i.category === filter)), "Nothing here right now.");
+  const grid = $("grid");
+  grid.replaceChildren();
+  for (const [cat, label, colour] of TILES) {
+    const items = itemsFor(cat);
+    const fresh = items.filter(i => Date.now() - Date.parse(i.published_at) < DAY_MS).length;
+    const tile = document.createElement("button");
+    tile.type = "button";
+    tile.className = "tile" + (cat === "forecast" ? " forecast" : "");
+    tile.style.setProperty("--c", colour);
+    tile.setAttribute("aria-expanded", String(open === cat));
+    tile.setAttribute("aria-controls", "panel-" + cat);
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = label;
+    const count = document.createElement("span");
+    count.className = "count";
+    const big = document.createElement("b");
+    big.textContent = fresh;
+    count.append(big, "new · " + items.length);
+    tile.append(name, count);
+    tile.addEventListener("click", () => { open = open === cat ? null : cat; render(); });
+    grid.append(tile);
+    if (open === cat) {
+      const panel = document.createElement("div");
+      panel.className = "panel";
+      panel.id = "panel-" + cat;
+      panel.style.setProperty("--c", colour);
+      const ul = document.createElement("ul");
+      ul.className = "news";
+      if (!items.length) { const li = document.createElement("li"); li.className = "muted"; li.textContent = "Nothing here right now."; ul.append(li); }
+      items.forEach(i => ul.append(row(i)));
+      panel.append(ul);
+      grid.append(panel);
+    }
+  }
   const failed = st.failed_sources || [];
   $("failed").textContent = failed.length ? "Sources down: " + failed.join(", ") + " ·" : "";
-  $("chips").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.cat === filter)));
 }
 function showDesk() {
   $("login").hidden = true;
@@ -158,12 +200,6 @@ async function refresh() {
   catch { forget(); showLogin("The password was changed — enter the new one."); }
 }
 async function start() {
-  for (const [cat, label] of CATEGORIES) {
-    const b = document.createElement("button");
-    b.type = "button"; b.dataset.cat = cat; b.textContent = label;
-    b.addEventListener("click", () => { filter = cat; render(); });
-    $("chips").append(b);
-  }
   let blob;
   try { blob = await fetchBlob(); } catch (e) { showLogin("Could not download the news. Check your internet and reload."); return; }
   const saved = loadRemembered();
