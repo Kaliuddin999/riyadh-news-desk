@@ -13,7 +13,7 @@ from newsdesk.crypto import encrypt_json, load_or_create_salt
 from newsdesk.fetch import fetch_entries
 from newsdesk.publish import git_publish
 from newsdesk.sources import FEEDS
-from newsdesk.store import iso, make_item, merge, prune
+from newsdesk.store import collapse_similar, iso, make_item, merge, prune
 
 ROOT = Path(__file__).resolve().parent
 MIN_PASSWORD_LENGTH = 12
@@ -54,6 +54,15 @@ def load_items(store_path):
         return []
 
 
+def resort(item):
+    """Apply the current rules to a saved item (they improve over time). Saved items already
+    passed the Saudi check when collected, and their summaries are not kept."""
+    category, urgent = classify(item["title"], assume_local=True)
+    if category:
+        item = dict(item, category=category, urgent=urgent)
+    return item
+
+
 def collect(feeds, fetcher, now):
     items, failed = [], []
     for feed in feeds:
@@ -81,12 +90,14 @@ def run(root, *, fetcher=fetch_entries, publisher=git_publish, feeds=FEEDS, now=
     now = now or datetime.now(timezone.utc)
     password = read_password(root)
     store_path = root / "data" / "news.json"
-    existing = load_items(store_path)
+    existing = [resort(i) for i in load_items(store_path)]
 
     new, failed = collect(feeds, fetcher, now)
     new = prune(new, now)
-    items, added = merge(existing, new)
-    items = prune(items, now)
+    items, _ = merge(existing, new)
+    items = collapse_similar(prune(items, now))
+    known = {i["id"] for i in existing}
+    added = sum(i["id"] not in known for i in items)
     status = {"last_run": iso(now), "new_count": added, "failed_sources": failed}
     log.info("run: %d new, %d total, failed feeds: %s", added, len(items), failed or "none")
 

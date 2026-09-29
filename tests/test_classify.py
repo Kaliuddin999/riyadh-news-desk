@@ -118,3 +118,7 @@ def test_portal_false_positives_are_discarded(title):
 ])
 def test_live_preview_corrections(title, expected):
     assert classify(title) == expected
+
+
+def test_schools_reopening_is_not_urgent():
+    assert classify("Schools in Riyadh return to in-person learning after temporary closure") == ("schools", False)

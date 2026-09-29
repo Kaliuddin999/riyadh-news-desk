@@ -123,3 +123,24 @@ def test_feed_limit_keeps_only_the_newest_entries(root):
     fetch_news.run(root, fetcher=lambda url: [older, RAIN], publisher=lambda r, m: True,
                    feeds=[Feed("capped", "http://capped", limit=1)], now=NOW, iterations=1000)
     assert [i["title"] for i in published(root)["items"]] == [RAIN["title"]]
+
+
+def test_repeated_story_is_published_once(root):
+    again = dict(RAIN, title="NCM issues red alert as heavy rain hits Riyadh", link="https://example.com/rain2",
+                 published=datetime(2026, 9, 27, 8, 30, tzinfo=timezone.utc))
+    fetch_news.run(root, fetcher=lambda url: [RAIN, again], publisher=lambda r, m: True,
+                   feeds=[Feed("good", "http://good")], now=NOW, iterations=1000)
+    payload = published(root)
+    assert [i["title"] for i in payload["items"]] == [again["title"]]
+    assert payload["status"]["new_count"] == 1
+
+
+def test_saved_items_are_resorted_with_current_rules(root):
+    (root / "data").mkdir()
+    saved = {"id": "x", "title": "Schools in Riyadh return to in-person learning after temporary closure",
+             "link": "https://e.com/back", "source": "", "category": "schools", "urgent": True,
+             "published_at": "2026-09-27T07:00:00Z", "fetched_at": "2026-09-27T07:00:00Z"}
+    (root / "data" / "news.json").write_text(json.dumps({"items": [saved], "status": {}}), encoding="utf-8")
+    run(root)
+    (back,) = [i for i in published(root)["items"] if i["id"] == "x"]
+    assert back["urgent"] is False

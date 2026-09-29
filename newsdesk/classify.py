@@ -27,6 +27,7 @@ SCHOOL_SUBJECT = _words("school*", "madrasati", "classes", "students",
 SCHOOL_CHANGE = _words("suspend*", "closed", "closure*", "remote", "online",
                        "distance learning", "cancel*", "postpone*", "holiday*")
 SCHOOL_URGENT = _words("suspend*", "closed", "closure*", "remote", "distance learning", "cancel*")
+SCHOOL_REOPEN = _words("return*", "reopen*", "resum*", "in-person", "back to")
 
 WEATHER = _words("weather", "rain*", "storm*", "dust*", "sandstorm*", "thunder*", "flood*",
                  "ncm", "meteorolog*", "heatwave", "fog", "hailstorm*", "torrential")
@@ -89,7 +90,7 @@ def classify(title, summary="", assume_local=False):
     local = assume_local or bool(LOCATION.search(text))
     if local:
         if SCHOOL_SUBJECT.search(text) and SCHOOL_CHANGE.search(text):
-            return "schools", bool(SCHOOL_URGENT.search(text))
+            return "schools", bool(SCHOOL_URGENT.search(text) and not SCHOOL_REOPEN.search(text))
         if WEATHER.search(text):
             return "weather", bool(WEATHER_URGENT.search(text))
         if ROAD_SUBJECT.search(text) and ROAD_CHANGE.search(text):

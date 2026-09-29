@@ -5,7 +5,23 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 DEFAULT_RETENTION_DAYS = 14
-RETENTION_DAYS = {"shalfa": 365}
+# Fast-changing topics go stale quickly; Shalfa news is rare, so it stays for a year.
+RETENTION_DAYS = {"schools": 3, "weather": 3, "roads": 3,
+                  "crime": 7, "major": 7, "shopping": 7, "forecast": 7,
+                  "shalfa": 365}
+SAME_STORY_DAYS = 3
+# Words that say nothing about which story a headline tells.
+_FILLER = set("""a an the and or of in on at to for from by with as is are was were be been after amid
+over into its it this that than new says said report reports riyadh saudi arabia ksa capital kingdom
+authorities official officials""".split())
+# Outlets word the same story differently ("online classes" vs "remote learning").
+_SAME_MEANING = {"online": "remote", "distance": "remote", "classes": "learning", "lessons": "learning",
+                 "switch": "shift", "switches": "shift", "shifts": "shift", "adopt": "shift",
+                 "adopts": "shift", "move": "shift", "moves": "shift", "revert": "shift",
+                 "reverts": "shift", "closed": "closure", "closes": "closure", "close": "closure",
+                 "suspends": "suspend", "suspended": "suspend", "thunderstorm": "storm",
+                 "thunderstorms": "storm", "storms": "storm", "rains": "rain", "rainfall": "rain",
+                 "warning": "alert", "warns": "alert", "alerts": "alert"}
 _ISO = "%Y-%m-%dT%H:%M:%SZ"
 
 
@@ -31,6 +47,31 @@ def item_id(url):
 
 def _title_key(title):
     return re.sub(r"[^a-z0-9]+", " ", title.lower()).strip()
+
+
+def _story_words(title):
+    words = (_SAME_MEANING.get(w, w) for w in _title_key(title).split())
+    return {w for w in words if len(w) > 2 and w not in _FILLER}
+
+
+def _same_story(a, b):
+    """Headlines share most of their meaningful words (at least 3)."""
+    shared = len(a & b)
+    return shared >= 3 and shared >= 0.5 * min(len(a), len(b))
+
+
+def collapse_similar(items):
+    """Keep only the newest headline of each story (same category, within a few days)."""
+    kept = []
+    for item in sorted(items, key=lambda i: i["published_at"], reverse=True):
+        words = _story_words(item["title"])
+        when = parse_iso(item["published_at"])
+        if not any(k["category"] == item["category"]
+                   and when >= parse_iso(k["published_at"]) - timedelta(days=SAME_STORY_DAYS)
+                   and _same_story(words, _story_words(k["title"]))
+                   for k in kept):
+            kept.append(item)
+    return kept
 
 
 def make_item(*, title, link, source, category, urgent, published, now):
