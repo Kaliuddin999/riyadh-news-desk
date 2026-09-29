@@ -42,12 +42,14 @@ button.primary{font:inherit;padding:10px;border:0;border-radius:8px;background:v
 .error{color:var(--warn);min-height:1.2em}
 .linkbtn{background:none;border:0;color:var(--muted);text-decoration:underline;font:inherit;font-size:.8rem;cursor:pointer;padding:0}
 footer{margin-top:14px}
+.refreshbtn{font:inherit;font-size:.85rem;font-weight:600;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);cursor:pointer}
+#viewnote{margin:0 0 10px}
 [hidden]{display:none!important}
 </style>
 </head>
 <body>
 <main>
-<header><h1>MAK News Portal</h1><span id="updated" class="muted"></span></header>
+<header><h1>MAK News Portal</h1><span><span id="updated" class="muted"></span> <button id="refresh" class="refreshbtn" type="button" hidden>🔄 Refresh</button></span></header>
 
 <section id="login" hidden>
   <h2>Enter password</h2>
@@ -61,6 +63,7 @@ footer{margin-top:14px}
 
 <div id="desk" hidden>
   <div id="stale" class="stale" hidden>No update for over 2 hours — is the laptop off?</div>
+  <p id="viewnote" class="muted" hidden>Showing today &amp; yesterday (Shalfa: all) · <button class="linkbtn" id="showall" type="button">Show all 14 days</button></p>
   <div class="grid" id="grid"></div>
   <footer class="muted"><span id="failed"></span> <button class="linkbtn" id="forget" type="button">Forget this device</button></footer>
 </div>
@@ -86,7 +89,18 @@ const TILES = [
 const STORE_KEY = "riyadh-news-desk-key";
 const REFRESH_MS = 5 * 60 * 1000, STALE_MS = 2 * 60 * 60 * 1000, DAY_MS = 24 * 60 * 60 * 1000, URGENT_WINDOW_MS = 2 * DAY_MS;
 const riyadhTime = new Intl.DateTimeFormat("en-GB", {timeZone: "Asia/Riyadh", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"});
+const VIEW_KEY = "mak-view";
+const riyadhDate = new Intl.DateTimeFormat("en-CA", {timeZone: "Asia/Riyadh"});  // YYYY-MM-DD
 let key = null, salt = null, data = null, open = null, timer = null;
+let recentOnly = (() => { try { return localStorage.getItem(VIEW_KEY) === "recent"; } catch { return false; } })();
+function setRecentOnly(on) {
+  recentOnly = on;
+  try { on ? localStorage.setItem(VIEW_KEY, "recent") : localStorage.removeItem(VIEW_KEY); } catch {}
+}
+function isTodayOrYesterday(isoText) {  // by the Riyadh calendar
+  const day = riyadhDate.format(new Date(isoText));
+  return day === riyadhDate.format(new Date()) || day === riyadhDate.format(new Date(Date.now() - DAY_MS));
+}
 
 const $ = id => document.getElementById(id);
 const fromB64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
@@ -119,7 +133,8 @@ function ago(isoText) {
   return h < 48 ? h + " h ago" : Math.round(h / 24) + " days ago";
 }
 function itemsFor(cat) {
-  const items = data.items || [];
+  let items = data.items || [];
+  if (recentOnly) items = items.filter(i => i.category === "shalfa" || isTodayOrYesterday(i.published_at));  // Shalfa news is rare
   if (cat === "urgent") return items.filter(i => i.urgent && Date.now() - Date.parse(i.published_at) < URGENT_WINDOW_MS);
   return items.filter(i => i.category === cat);
 }
@@ -140,6 +155,8 @@ function render() {
   const last = st.last_run ? Date.parse(st.last_run) : 0;
   $("updated").textContent = last ? "Updated " + riyadhTime.format(new Date(last)) + " (Riyadh)" : "";
   $("stale").hidden = !last || Date.now() - last < STALE_MS;
+  $("viewnote").hidden = !recentOnly;
+  $("refresh").hidden = false;
   const grid = $("grid");
   grid.replaceChildren();
   for (const [cat, label, colour] of TILES) {
@@ -230,6 +247,17 @@ $("login-form").addEventListener("submit", async ev => {
   }
 });
 $("forget").addEventListener("click", () => { forget(); showLogin(""); });
+$("refresh").addEventListener("click", async () => {
+  const btn = $("refresh");
+  btn.disabled = true;
+  btn.textContent = "Refreshing…";
+  setRecentOnly(true);
+  await refresh();
+  if (data) render();
+  btn.disabled = false;
+  btn.textContent = "🔄 Refresh";
+});
+$("showall").addEventListener("click", () => { setRecentOnly(false); render(); });
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(); });
 start();
 </script>
