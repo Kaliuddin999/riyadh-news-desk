@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="data:,">
+<title>MAK News Portal</title>
+<style>
+:root{color-scheme:light dark;--bg:#f4f3ef;--card:#fff;--ink:#1c1c1c;--muted:#6b6b6b;--line:#e3e1dc;--accent:#0b6b4f;--warn:#b3261e;--warn-bg:#fdecea}
+@media (prefers-color-scheme:dark){:root{--bg:#121212;--card:#1e1e1e;--ink:#ececec;--muted:#a0a0a0;--line:#333;--accent:#4cc39a;--warn:#ff8a80;--warn-bg:#3a1f1d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+h1{font-size:1.35rem;margin:0;letter-spacing:.02em}
+.muted{color:var(--muted);font-size:.85rem}
+.stale{background:var(--warn-bg);color:var(--warn);padding:8px 12px;border-radius:8px;margin:0 0 12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:640px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tile{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:64px;padding:12px 14px;border:0;border-radius:10px;
+  background:var(--c);color:#fff;font:inherit;font-weight:650;text-align:left;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.tile:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.tile[aria-expanded=true]{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--c)}
+.tile .name{hyphens:auto;overflow-wrap:break-word;min-width:0}
+.tile .count{flex:none;text-align:right;font-size:.8rem;font-weight:500;line-height:1.2}
+.tile .count b{display:block;font-size:1.3rem;font-weight:750}
+.tile.forecast{background:#1b1b1b;color:#ffd54f;border:2px solid #ffd54f}
+.panel{grid-column:1/-1;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:10px;padding:6px 14px}
+ul.news{list-style:none;margin:0;padding:0}
+ul.news li{padding:10px 0;border-top:1px solid var(--line)}
+ul.news li:first-child{border-top:0}
+ul.news a{color:var(--ink);text-decoration:none;font-weight:600;overflow-wrap:anywhere}
+ul.news a:hover{text-decoration:underline}
+.meta{color:var(--muted);font-size:.8rem;margin-top:2px}
+.u{color:var(--warn);font-weight:700}
+#login{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+#login h2{font-size:1rem;margin:0 0 8px}
+form{display:flex;flex-direction:column;gap:10px;max-width:360px}
+input[type=password]{font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+button.primary{font:inherit;padding:10px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
+.error{color:var(--warn);min-height:1.2em}
+.linkbtn{background:none;border:0;color:var(--muted);text-decoration:underline;font:inherit;font-size:.8rem;cursor:pointer;padding:0}
+footer{margin-top:14px}
+.refreshbtn{font:inherit;font-size:.85rem;font-weight:600;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);cursor:pointer}
+#viewnote{margin:0 0 10px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+<header><h1>MAK News Portal</h1><span><span id="updated" class="muted"></span> <button id="refresh" class="refreshbtn" type="button" hidden>🔄 Refresh</button></span></header>
+
+<section id="login" hidden>
+  <h2>Enter password</h2>
+  <form id="login-form">
+    <input id="pw" type="password" autocomplete="current-password" aria-label="Password" required>
+    <label class="muted"><input id="remember" type="checkbox" checked> Remember on this device</label>
+    <button class="primary" type="submit">Open</button>
+    <div id="login-error" class="error" role="alert"></div>
+  </form>
+</section>
+
+<div id="desk" hidden>
+  <div id="stale" class="stale" hidden>No update for over 2 hours — is the laptop off?</div>
+  <p id="viewnote" class="muted" hidden>Showing today &amp; yesterday (Shalfa: all) · <button class="linkbtn" id="showall" type="button">Show all 14 days</button></p>
+  <div class="grid" id="grid"></div>
+  <footer class="muted"><span id="failed"></span> <button class="linkbtn" id="forget" type="button">Forget this device</button></footer>
+</div>
+</main>
+<script>
+// [category, label, colour]. "urgent" collects urgent items from every category.
+const TILES = [
+  ["urgent", "🔴 Urgent", "#c62828"],
+  ["shalfa", "📌 Shalfa 9613", "#00695c"],
+  ["schools", "🏫 Schools", "#1565c0"],
+  ["weather", "⛈️ Weather", "#0277bd"],
+  ["roads", "🚗 Traffic & Roads", "#d84315"],
+  ["crime", "🚨 Crime & Accidents", "#6a1b9a"],
+  ["fraud", "⚠️ Fraud & Awareness", "#ad1457"],
+  ["major", "⚫ Major News", "#37474f"],
+  ["economy", "💹 KSA Economy", "#2e7d32"],
+  ["finance", "🏦 Finance & Banking", "#283593"],
+  ["ipo", "📈 Tadawul & IPO", "#4e7d21"],
+  ["contracts", "📝 Contracts Awarded", "#5d4037"],
+  ["shopping", "🛒 Super­market Offers", "#7a6e12"],  // soft hyphen: breaks as "Super-market" on phones
+  ["forecast", "🔮 MAK-FORECAST", "#ffd54f"],
+];
+const STORE_KEY = "riyadh-news-desk-key";
+const REFRESH_MS = 5 * 60 * 1000, STALE_MS = 2 * 60 * 60 * 1000, DAY_MS = 24 * 60 * 60 * 1000, URGENT_WINDOW_MS = 2 * DAY_MS;
+const riyadhTime = new Intl.DateTimeFormat("en-GB", {timeZone: "Asia/Riyadh", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"});
+const VIEW_KEY = "mak-view";
+const riyadhDate = new Intl.DateTimeFormat("en-CA", {timeZone: "Asia/Riyadh"});  // YYYY-MM-DD
+let key = null, salt = null, data = null, open = null, timer = null;
+let recentOnly = (() => { try { return localStorage.getItem(VIEW_KEY) === "recent"; } catch { return false; } })();
+function setRecentOnly(on) {
+  recentOnly = on;
+  try { on ? localStorage.setItem(VIEW_KEY, "recent") : localStorage.removeItem(VIEW_KEY); } catch {}
+}
+function isTodayOrYesterday(isoText) {  // by the Riyadh calendar
+  const day = riyadhDate.format(new Date(isoText));
+  return day === riyadhDate.format(new Date()) || day === riyadhDate.format(new Date(Date.now() - DAY_MS));
+}
+
+const $ = id => document.getElementById(id);
+const fromB64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const toB64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+
+async function fetchBlob() {
+  const r = await fetch("news.enc?t=" + Date.now(), {cache: "no-store"});
+  if (!r.ok) throw new Error("download failed (" + r.status + ")");
+  return r.json();
+}
+async function deriveKey(password, blob) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({name: "PBKDF2", salt: fromB64(blob.salt), iterations: blob.iter, hash: "SHA-256"},
+    base, {name: "AES-GCM", length: 256}, true, ["decrypt"]);
+}
+async function decrypt(blob, k) {
+  const plain = await crypto.subtle.decrypt({name: "AES-GCM", iv: fromB64(blob.iv)}, k, fromB64(blob.ct));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+function loadRemembered() { try { return JSON.parse(localStorage.getItem(STORE_KEY)); } catch { return null; } }
+async function remember(k, s) {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({salt: s, key: toB64(await crypto.subtle.exportKey("raw", k))})); } catch {}
+}
+function forget() { try { localStorage.removeItem(STORE_KEY); } catch {} }
+
+function ago(isoText) {
+  const m = Math.round((Date.now() - Date.parse(isoText)) / 60000);
+  if (m < 60) return m <= 1 ? "just now" : m + " min ago";
+  const h = Math.round(m / 60);
+  return h < 48 ? h + " h ago" : Math.round(h / 24) + " days ago";
+}
+function itemsFor(cat) {
+  let items = data.items || [];
+  if (recentOnly) items = items.filter(i => i.category === "shalfa" || isTodayOrYesterday(i.published_at));  // Shalfa news is rare
+  if (cat === "urgent") return items.filter(i => i.urgent && Date.now() - Date.parse(i.published_at) < URGENT_WINDOW_MS);
+  return items.filter(i => i.category === cat);
+}
+function row(item) {
+  const li = document.createElement("li");
+  const a = document.createElement("a");
+  a.textContent = item.title;
+  if (/^https?:\/\//i.test(item.link)) { a.href = item.link; a.target = "_blank"; a.rel = "noopener noreferrer"; }
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.append((item.source ? item.source + " · " : "") + ago(item.published_at) + " · " + riyadhTime.format(new Date(item.published_at)));
+  if (item.urgent) { const u = document.createElement("span"); u.className = "u"; u.textContent = " URGENT"; meta.append(u); }
+  li.append(a, meta);
+  return li;
+}
+function render() {
+  const st = data.status || {};
+  const last = st.last_run ? Date.parse(st.last_run) : 0;
+  $("updated").textContent = last ? "Updated " + riyadhTime.format(new Date(last)) + " (Riyadh)" : "";
+  $("stale").hidden = !last || Date.now() - last < STALE_MS;
+  $("viewnote").hidden = !recentOnly;
+  $("refresh").hidden = false;
+  const grid = $("grid");
+  grid.replaceChildren();
+  for (const [cat, label, colour] of TILES) {
+    const items = itemsFor(cat);
+    const fresh = items.filter(i => Date.now() - Date.parse(i.published_at) < DAY_MS).length;
+    const tile = document.createElement("button");
+    tile.type = "button";
+    tile.className = "tile" + (cat === "forecast" ? " forecast" : "");
+    tile.style.setProperty("--c", colour);
+    tile.setAttribute("aria-expanded", String(open === cat));
+    tile.setAttribute("aria-controls", "panel-" + cat);
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = label;
+    const count = document.createElement("span");
+    count.className = "count";
+    const big = document.createElement("b");
+    big.textContent = fresh;
+    count.append(big, "new · " + items.length);
+    tile.append(name, count);
+    tile.addEventListener("click", () => { open = open === cat ? null : cat; render(); });
+    grid.append(tile);
+    if (open === cat) {
+      const panel = document.createElement("div");
+      panel.className = "panel";
+      panel.id = "panel-" + cat;
+      panel.style.setProperty("--c", colour);
+      const ul = document.createElement("ul");
+      ul.className = "news";
+      if (!items.length) { const li = document.createElement("li"); li.className = "muted"; li.textContent = "Nothing here right now."; ul.append(li); }
+      items.forEach(i => ul.append(row(i)));
+      panel.append(ul);
+      grid.append(panel);
+    }
+  }
+  const failed = st.failed_sources || [];
+  $("failed").textContent = failed.length ? "Sources down: " + failed.join(", ") + " ·" : "";
+}
+function showDesk() {
+  $("login").hidden = true;
+  $("desk").hidden = false;
+  render();
+  if (!timer) timer = setInterval(refresh, REFRESH_MS);
+}
+function showLogin(message) {
+  key = null;
+  $("desk").hidden = true;
+  $("login").hidden = false;
+  $("login-error").textContent = message;
+  $("pw").focus();
+}
+async function refresh() {
+  if (!key) return;
+  let blob;
+  try { blob = await fetchBlob(); } catch { return; }            // offline: keep showing what we have
+  if (blob.salt !== salt) { forget(); showLogin("The password was changed — enter the new one."); return; }
+  try { data = await decrypt(blob, key); render(); }
+  catch { forget(); showLogin("The password was changed — enter the new one."); }
+}
+async function start() {
+  let blob;
+  try { blob = await fetchBlob(); } catch (e) { showLogin("Could not download the news. Check your internet and reload."); return; }
+  const saved = loadRemembered();
+  if (saved && saved.salt === blob.salt) {
+    try {
+      key = await crypto.subtle.importKey("raw", fromB64(saved.key), "AES-GCM", false, ["decrypt"]);
+      salt = blob.salt;
+      data = await decrypt(blob, key);
+      showDesk();
+      return;
+    } catch { forget(); }
+  }
+  showLogin("");
+}
+$("login-form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  $("login-error").textContent = "Opening…";
+  try {
+    const blob = await fetchBlob();
+    const k = await deriveKey($("pw").value.trim(), blob);  // the job trims the saved password too
+    data = await decrypt(blob, k);                                 // throws OperationError on wrong password
+    key = k; salt = blob.salt;
+    if ($("remember").checked) await remember(k, blob.salt);
+    $("pw").value = "";
+    showDesk();
+  } catch (e) {
+    $("login-error").textContent = e.name === "OperationError" ? "Wrong password." : "Could not open: " + e.message;
+  }
+});
+$("forget").addEventListener("click", () => { forget(); showLogin(""); });
+$("refresh").addEventListener("click", async () => {
+  const btn = $("refresh");
+  btn.disabled = true;
+  btn.textContent = "Refreshing…";
+  setRecentOnly(true);
+  await refresh();
+  if (data) render();
+  btn.disabled = false;
+  btn.textContent = "🔄 Refresh";
+});
+$("showall").addEventListener("click", () => { setRecentOnly(false); render(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(); });
+start();
+</script>
+</body>
+</html>
